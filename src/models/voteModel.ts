@@ -6,7 +6,7 @@ import Bet from "./betModel";
 
 class Vote extends Model {
   public wagerId!: number;
-  public userId!: number;
+  public userId!: String;
   public vote!: string;
 }
 Vote.init(
@@ -21,7 +21,7 @@ Vote.init(
       allowNull: false,
     },
     userId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     vote: {
@@ -34,7 +34,7 @@ Vote.init(
 );
 
 // Adding associations
-Vote.belongsTo(Bet, { foreignKey: "id" }); // Each Vote is tied to a Bet
-Bet.hasMany(Vote, { foreignKey: "id" }); // A Bet can have many Votes
+//Vote.belongsTo(Bet, { foreignKey: "id" }); // Each Vote is tied to a Bet
+//Bet.hasMany(Vote, { foreignKey: "id" }); // A Bet can have many Votes
 
 export default Vote;

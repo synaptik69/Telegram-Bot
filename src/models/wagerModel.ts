@@ -72,8 +72,7 @@ Wager.init(
       allowNull: false,
     },
     status: {
-      //type: DataTypes.ENUM("Open", "Closed", "Resolved"),
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: "Open",
     },

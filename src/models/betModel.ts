@@ -2,14 +2,14 @@ import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
 import Wager from "./wagerModel"; // assuming you have the Wager model imported
 import User from "./userModel"; // assuming you have the User model imported
-import { BelongsToGetAssociationMixin } from "sequelize";
 
 interface BetAttributes {
   id: number;
   wagerId: number;
-  userId: number;
+  userId: String;
   amount: number;
   choice: string;
+  username: string;
 }
 interface BetCreationAttributes extends Optional<BetAttributes, "id"> {}
 
@@ -19,13 +19,10 @@ class Bet
 {
   public id!: number;
   public wagerId!: number;
-  public userId!: number;
+  public userId!: String;
   public amount!: number;
   public choice!: string;
-
-  public User?: User;
-
-  public getUser!: BelongsToGetAssociationMixin<User>;
+  public username!: string;
 }
 
 Bet.init(
@@ -40,7 +37,7 @@ Bet.init(
       allowNull: false,
     },
     userId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     amount: {
@@ -52,6 +49,10 @@ Bet.init(
       allowNull: false,
       defaultValue: "A",
     },
+    username: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
   {
     sequelize,
@@ -62,9 +63,9 @@ Bet.init(
 );
 
 // Adding associations
-Bet.belongsTo(Wager, { foreignKey: "id" }); // Each Vote belongs to a Wager
-Wager.hasMany(Bet, { foreignKey: "id" });
-Bet.belongsTo(User, { foreignKey: "userId" }); // Each Vote belongs to a User
-User.hasMany(Bet, { foreignKey: "userId" });
+// Bet.belongsTo(Wager, { foreignKey: "id" }); // Each Vote belongs to a Wager
+// Wager.hasMany(Bet, { foreignKey: "id" });
+// Bet.belongsTo(User, { foreignKey: "userId" }); // Each Vote belongs to a User
+// User.hasMany(Bet, { foreignKey: "userId" });
 
 export default Bet;

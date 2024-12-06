@@ -1,19 +1,22 @@
 import Bet from "../models/betModel";
 import Wager from "../models/wagerModel";
+import User from "../models/userModel";
 
 // Betting function
 export const placeBet = async (
-  userId: number,
+  userId: String,
   wagerId: number,
   option: "A" | "B",
-  amount: number
+  amount: number,
+  username: string
 ): Promise<any> => {
   try {
     const wager = await Wager.findOne({ where: { wagerId } });
-    console.log("-------------------", wagerId);
+    console.log("-------------------*wagerId----------", wagerId);
     if (!wager) {
       return { success: false, message: "Wager not found." };
     }
+
     wager.totalPotA = wager.totalPotA || 0;
     wager.totalPotB = wager.totalPotB || 0;
 
@@ -38,6 +41,7 @@ export const placeBet = async (
       wagerId,
       choice: option,
       amount,
+      username,
     });
 
     return { success: true, bet: newBet, updatedWager: wager };
@@ -50,7 +54,7 @@ export const placeBet = async (
 // Function to calculate odds
 export const calculateOdds = async (wagerId: number): Promise<any> => {
   const wager = await Wager.findOne({ where: { wagerId } });
-  console.log("=================", wagerId);
+  console.log("=================calculateodds", wagerId);
 
   if (!wager) {
     return { success: false, message: "Wager not found." };
@@ -75,9 +79,19 @@ export const calculateOdds = async (wagerId: number): Promise<any> => {
 export const checkUserBet = async (
   userId: number,
   wagerId: number
-): Promise<any> => {
+): Promise<boolean> => {
   // Check the database to see if the user placed a bet on the wager
-  const bet = await Bet.findOne({ where: { userId, wagerId } });
+  if (!Number.isInteger(userId) || !Number.isInteger(wagerId)) {
+    console.error("Invalid userId or wagerId. Must be integers.");
+    return false;
+  }
+
+  // Query the database for the bet
+  const bet = await Bet.findOne({
+    where: { wagerId, userId },
+  });
+
+  console.log("1111111bet", bet);
   return !!bet;
 };
 

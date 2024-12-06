@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import User from "../models/userModel";
 
 export const createUser = async (
-  userId: number,
+  userId: String,
   username: string
 ): Promise<any> => {
   try {

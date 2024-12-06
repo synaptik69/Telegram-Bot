@@ -205,7 +205,7 @@ export async function refundWager(wagerId: number): Promise<void> {
 
 export const createVote = async (
   wagerId: number,
-  userId: number,
+  userId: string,
   voteOption: "A" | "B"
 ): Promise<{ success: boolean; message: string }> => {
   try {
@@ -233,36 +233,6 @@ export const createVote = async (
     };
   }
 };
-
-// export const getVoteCounts = async (
-//   wagerId: number
-// ): Promise<{ A: number; B: number }> => {
-//   try {
-//     // const countA = await Vote.count({ where: { wagerId, vote: "A" } });
-//     // const countB = await Vote.count({ where: { wagerId, vote: "B" } });
-//     const countA = await Vote.count({
-//       where: {
-//         wagerId, // Matches the wager ID
-//         vote: "A", // Matches the option ("A" or "B")
-//       },
-//       attributes: ["userId"],
-//     });
-
-//     const countB = await Vote.count({
-//       where: {
-//         wagerId, // Matches the wager ID
-//         vote: "B", // Matches the option ("A" or "B")
-//       },
-//       attributes: ["userId"],
-//     });
-
-//     console.log("------countA and count B", countA, countB);
-//     return { A: countA, B: countB };
-//   } catch (error) {
-//     console.error("Error fetching vote counts:", error);
-//     throw new Error("Failed to fetch vote counts.");
-//   }
-// };
 
 export const getVoteCounts = async (
   wagerId: number
@@ -336,13 +306,6 @@ export const getVoteCounts = async (
       col: "userId",
     });
 
-    console.log(
-      "votedA_betA, votedA_betB, votedB_betA, votedB_betB",
-      votedA_betA,
-      votedA_betB,
-      votedB_betA,
-      votedB_betB
-    );
     return { votedA_betA, votedA_betB, votedB_betA, votedB_betB };
   } catch (error) {
     console.error("Error fetching combined vote and bet counts:", error);
@@ -373,8 +336,7 @@ export const hasUserVoted = async (
 export const getBettorsForOutcome = async (
   wagerId: number,
   outcome: "A" | "B",
-  tempOdds: number,
-  telegramUsername: any
+  tempOdds: number
 ): Promise<any> => {
   try {
     // Fetch all bets placed on the specified wager and outcome
@@ -383,12 +345,6 @@ export const getBettorsForOutcome = async (
         wagerId: wagerId,
         choice: outcome, // Filtering by the outcome choice ('A' or 'B')
       },
-      include: [
-        {
-          model: User, // Include the User model to access user details
-          attributes: ["id", "username"], // Select specific fields from the User model
-        },
-      ],
     });
 
     if (!bettors.length) {
@@ -405,7 +361,7 @@ export const getBettorsForOutcome = async (
     // Process the results into a readable format
     const bettorData = bettors.map((bet) => ({
       userId: bet.userId,
-      name: telegramUsername || "Unknown", // Use the username or fallback to "Unknown"
+      name: bet.username, // Use the username or fallback to "Unknown"
       option: bet.choice,
       betAmount: bet.amount,
       odds: (tempOdds - 1).toFixed(2), // You might want to adjust this based on actual data
@@ -413,7 +369,6 @@ export const getBettorsForOutcome = async (
       amountPaidOut: bet.amount * tempOdds, // Adjust this based on actual payout rules
     }));
 
-    console.log("-------bettorData in getBettorsForOutcome-------", bettorData);
     return bettorData;
   } catch (error) {
     console.error("Error fetching bettors for outcome:", error);
@@ -421,85 +376,10 @@ export const getBettorsForOutcome = async (
   }
 };
 
-// export const generateBettorTable = (
-//   bettorData: {
-//     userId: number; // Ensure userId is included in the bettorData
-//     name: string; // This field won't be used anymore in the output table
-//     option: string;
-//     betAmount: number;
-//     odds: string | number; // odds can be a string or number, so ensure it's handled correctly
-//     profit: number;
-//     amountPaidOut: number;
-//   }[]
-// ): string => {
-//   if (!bettorData || bettorData.length === 0) {
-//     return "No bettors found for this outcome.";
-//   }
-
-//   console.log("=========bettordata in generateBettorTable", bettorData);
-
-//   // Define compact column widths
-//   const colWidths = {
-//     userId: 10, // Player ID width (instead of name)
-//     option: 3, // Option width
-//     betAmount: 7, // Bet Amount width
-//     odds: 4, // Odds width
-//     profit: 8, // Profit width
-//     amountPaidOut: 8, // Amount Paid Out width
-//   };
-
-//   // Format a single row
-//   const formatRow = (
-//     userId: string, // This now takes userId instead of name
-//     option: string,
-//     betAmount: string,
-//     odds: string, // Odds should be passed as a string
-//     profit: string,
-//     amountPaidOut: string
-//   ) => {
-//     return `| ${userId.padEnd(colWidths.userId, " ")} | ${option.padEnd(
-//       colWidths.option,
-//       " "
-//     )} | ${betAmount.padStart(colWidths.betAmount, " ")} | ${odds.padStart(
-//       colWidths.odds,
-//       " "
-//     )} | ${profit.padStart(colWidths.profit, " ")} | ${amountPaidOut.padStart(
-//       colWidths.amountPaidOut,
-//       " "
-//     )} |`;
-//   };
-
-//   // Header row
-//   const header = formatRow("User ID", "Opt", "Bet", "Odds", "Profit", "Paid");
-
-//   // Separator
-//   const separator =
-//     `|-${"-".repeat(colWidths.userId)}-|-` +
-//     `${"-".repeat(colWidths.option)}-|-` +
-//     `${"-".repeat(colWidths.betAmount)}-|-` +
-//     `${"-".repeat(colWidths.odds)}-|-` +
-//     `${"-".repeat(colWidths.profit)}-|-` +
-//     `${"-".repeat(colWidths.amountPaidOut)}-|`;
-
-//   // Data rows
-//   const rows = bettorData.map((bettor) => {
-//     const userId = bettor.userId.toString(); // Use userId in string format
-//     const option = bettor.option;
-//     const betAmount = bettor.betAmount.toString();
-//     const odds = bettor.odds.toString(); // Ensure odds is a string
-//     const profit = bettor.profit.toFixed(2); // Format profit as two decimal places
-//     const amountPaidOut = bettor.amountPaidOut.toFixed(2); // Format amount paid out as two decimal places
-//     return formatRow(userId, option, betAmount, odds, profit, amountPaidOut);
-//   });
-
-//   // Combine header, separator, and rows
-//   return [header, separator, ...rows].join("\n");
-// };
-
-export const generateBettorTable = (
+export const generateWinnerBettorTable = (
   bettorData: {
     userId: number; // Ensure userId is included in the bettorData
-    telegramUsername: string; // Username instead of name
+    name: string; // Username instead of name
     option: string;
     betAmount: number;
     odds: string | number; // odds can be a string or number, so ensure it's handled correctly
@@ -513,10 +393,10 @@ export const generateBettorTable = (
 
   // Header row
   const header = "👨Username 💰Bet 🎲Odds 📈Profit 🤑Pay Out";
-
   // Data rows
   const rows = bettorData.map((bettor) => {
-    const username = `@${bettor.telegramUsername}`; // Fallback for missing usernames
+    const username = `@${bettor.name}`; // Fallback for missing usernames
+    console.log("-----username in generateBettorTable------", username);
     const betAmount = `$${bettor.betAmount.toFixed(2)}`; // Format bet amount with $ and two decimals
     const odds =
       typeof bettor.odds === "number"
@@ -524,6 +404,42 @@ export const generateBettorTable = (
         : `${bettor.odds}x`; // Ensure odds is formatted correctly
     const profit = `$${bettor.profit.toFixed(2)}`; // Format profit with $ and two decimals
     const amountPaidOut = `$${bettor.amountPaidOut.toFixed(2)}`; // Format payout with $ and two decimals
+
+    return `👨${username} 💰${betAmount} 🎲${odds} 📈${profit} 🤑${amountPaidOut}`;
+  });
+
+  // Combine header and rows
+  return [header, ...rows].join("\n");
+};
+
+export const generateLoserBettorTable = (
+  bettorData: {
+    userId: number; // Ensure userId is included in the bettorData
+    name: string; // Username instead of name
+    option: string;
+    betAmount: number;
+    odds: string | number; // odds can be a string or number, so ensure it's handled correctly
+    profit: number;
+    amountPaidOut: number;
+  }[]
+): string => {
+  if (!bettorData || bettorData.length === 0) {
+    return "No bettors found for this outcome.";
+  }
+
+  // Header row
+  const header = "👨Username 💰Bet 🎲Odds 📈Loss 😭Pay Out";
+  // Data rows
+  const rows = bettorData.map((bettor) => {
+    const username = `@${bettor.name}`; // Fallback for missing usernames
+    console.log("-----username in generateBettorTable------", username);
+    const betAmount = `$${bettor.betAmount.toFixed(2)}`; // Format bet amount with $ and two decimals
+    const odds =
+      typeof bettor.odds === "number"
+        ? `${bettor.odds.toFixed(2)}x`
+        : `${bettor.odds}x`; // Ensure odds is formatted correctly
+    const profit = `$${bettor.profit.toFixed(2)}`; // Format profit with $ and two decimals
+    const amountPaidOut = `$0`; // Format payout with $ and two decimals
 
     return `👨${username} 💰${betAmount} 🎲${odds} 📈${profit} 🤑${amountPaidOut}`;
   });
