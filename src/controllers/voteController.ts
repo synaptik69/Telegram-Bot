@@ -17,8 +17,6 @@ export async function getBettorsForOption(
       col: "userId",
     });
 
-    // Extract user IDs from the result and return them as an array
-    //return bettors.map((bet) => bet.userId);
     return bettors;
   } catch (error) {
     console.error(
@@ -396,7 +394,6 @@ export const generateWinnerBettorTable = (
   // Data rows
   const rows = bettorData.map((bettor) => {
     const username = `@${bettor.name}`; // Fallback for missing usernames
-    console.log("-----username in generateBettorTable------", username);
     const betAmount = `$${bettor.betAmount.toFixed(2)}`; // Format bet amount with $ and two decimals
     const odds =
       typeof bettor.odds === "number"
@@ -432,7 +429,6 @@ export const generateLoserBettorTable = (
   // Data rows
   const rows = bettorData.map((bettor) => {
     const username = `@${bettor.name}`; // Fallback for missing usernames
-    console.log("-----username in generateBettorTable------", username);
     const betAmount = `$${bettor.betAmount.toFixed(2)}`; // Format bet amount with $ and two decimals
     const odds =
       typeof bettor.odds === "number"

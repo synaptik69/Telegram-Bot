@@ -29,7 +29,7 @@ import {
   generateLoserBettorTable,
   getBettorsForOutcome,
 } from "../controllers/voteController";
-
+import { config } from "../config/config";
 dotenv.config(); // Load environment variables
 
 const bot = new TelegramBot(process.env.TELEGRAM_TOKEN!, { polling: false }); // Set polling to true for real-time interaction
@@ -46,7 +46,7 @@ bot.setMyCommands(
 );
 
 // Define the chat ID of your group
-const groupChatId = "@bettingtestgroup"; // Replace with your actual group username or chat ID
+const groupChatId = `@${config.groupUserName}`; // Replace with your actual group username or chat ID
 //const groupChatId = "@socialwagergroup"; // Replace with your actual group username or chat ID
 
 // In-memory data store for temporary values
@@ -294,7 +294,7 @@ bot.onText(/\/create_wager/, async (msg) => {
           }
           wagerTimeLimit = parseInt(timeLimitMsg.text, 10);
 
-          if (wagerTimeLimit > 900000) {
+          if (wagerTimeLimit > config.wagerTimeLimit) {
             await bot.sendMessage(
               chatId,
               "The max timelimit is 900,000. Please input the value again!"
@@ -1239,7 +1239,7 @@ bot.onText(/\/create_wager/, async (msg) => {
                     callbackQuery.message.chat.id,
                     `🟢 Vote Placed. Current votes for wager "${wagerDescription}":\n\n` +
                       `🔵 Option A: ${totalVotedA_BetA}/${majorityA} votes submitted\n` +
-                      `🔴 Option B: ${totalVotedA_BetB}/${majorityB} votes submitted` +
+                      `🔴 Option B: ${totalVotedA_BetB}/${majorityB} votes submitted\n\n` +
                       `Bettors should keep voting to finalise this wager.`,
                     { parse_mode: "HTML" }
                   );
@@ -1248,7 +1248,7 @@ bot.onText(/\/create_wager/, async (msg) => {
                     `🟢🔒 Vote Submitted.\n\n` +
                       `🔒 @${callbackQuery.from.username} has voted on Option ${optionA} as the outcome of the wager: "${wagerDescription}":\n\n` +
                       `🔵 Option A: ${totalVotedA_BetA}/${majorityA} votes submitted\n` +
-                      `🔴 Option B: ${totalVotedA_BetB}/${majorityB} votes submitted` +
+                      `🔴 Option B: ${totalVotedA_BetB}/${majorityB} votes submitted\n\n` +
                       `Bettors should keep voting to finalise this wager.`,
                     {
                       parse_mode: "HTML",
@@ -1269,7 +1269,7 @@ bot.onText(/\/create_wager/, async (msg) => {
                     callbackQuery.message.chat.id,
                     `🟢 Vote Placed. Current votes for wager "${wagerDescription}":\n\n` +
                       `🔵 Option A: ${totalVotedB_BetA}/${majorityA} votes submitted\n` +
-                      `🔴 Option B: ${totalVotedB_BetB}/${majorityB} votes submitted` +
+                      `🔴 Option B: ${totalVotedB_BetB}/${majorityB} votes submitted\n\n` +
                       `Bettors should keep voting to finalise this wager.`
                   );
                   await bot.sendMessage(
@@ -1277,7 +1277,7 @@ bot.onText(/\/create_wager/, async (msg) => {
                     `🟢🔒 Vote Submitted.\n\n` +
                       `🔒 @${callbackQuery.from.username} has voted on Option ${optionA} as the outcome of the wager: "${wagerDescription}":\n\n` +
                       `🔵 Option A: ${totalVotedB_BetA}/${majorityA} votes submitted\n` +
-                      `🔴 Option B: ${totalVotedB_BetB}/${majorityB} votes submitted` +
+                      `🔴 Option B: ${totalVotedB_BetB}/${majorityB} votes submitted\n\n` +
                       `Bettors should keep voting to finalise this wager.`,
                     {
                       parse_mode: "HTML",
@@ -1295,7 +1295,8 @@ bot.onText(/\/create_wager/, async (msg) => {
                   );
 
                   console.log("========vote end========");
-                } else if (totalA + totalB == bettorsA + bettorsB) {
+                }
+                if (totalA + totalB == bettorsA + bettorsB) {
                   await bot.sendMessage(
                     callbackQuery.message.chat.id,
                     `🔴 <b>Wager closed</b>\n\n` +
@@ -1463,11 +1464,15 @@ bot.on("callback_query", async (query) => {
   const chatId = query.message?.chat.id;
   const callbackData = query.data;
   const telegramUsername = query.from.username;
+  console.log("telegramUsername", telegramUsername);
 
   if (!chatId || !callbackData) return;
 
   const mockWagers = await getRecentOpenWagers();
   const totalWagers = mockWagers.length;
+
+  const mockCloseWagers = await getRecentClosedWagers();
+  const totalCloseWagers = mockCloseWagers.length;
 
   if (
     callbackData.startsWith("openprev_") ||
@@ -1487,39 +1492,11 @@ bot.on("callback_query", async (query) => {
     const currentIndex = parseInt(callbackData.split("_")[1], 10);
     const newIndex = callbackData.startsWith("closeprev_")
       ? Math.max(currentIndex - 1, 0)
-      : Math.min(currentIndex + 1, totalWagers - 1);
+      : Math.min(currentIndex + 1, totalCloseWagers - 1);
 
-    const wager = mockWagers[newIndex];
-    await sendClosedWagerDetails(chatId, wager, newIndex, totalWagers);
-  }
-});
-
-bot.on("callback_query", async (query) => {
-  const chatId = query.message?.chat.id;
-  const callbackData = query.data;
-  const telegramUsername = query.from.username;
-  if (!chatId || !callbackData) return;
-
-  const mockWagers = await getRecentClosedWagers();
-  const totalWagers = mockWagers.length;
-
-  if (
-    callbackData.startsWith("closeprev_") ||
-    callbackData.startsWith("closenext_")
-  ) {
-    const currentIndex = parseInt(callbackData.split("_")[1], 10);
-    const newIndex = callbackData.startsWith("closeprev_")
-      ? Math.max(currentIndex - 1, 0)
-      : Math.min(currentIndex + 1, totalWagers - 1);
-
-    const wager = mockWagers[newIndex];
-    await sendClosedWagerDetails(
-      chatId,
-      wager,
-      newIndex,
-      totalWagers
-      //telegramUsername
-    );
+    const wager = mockCloseWagers[newIndex];
+    console.log("========wager---------", wager);
+    await sendClosedWagerDetails(chatId, wager, newIndex, totalCloseWagers);
   }
 });
 
@@ -1529,8 +1506,7 @@ const sendWagerDetails = async (
   currentIndex: number,
   totalWagers: number
 ) => {
-  const wagerMessageLink = `https://t.me/socialwagergroup/${wager.bettingMessageId}`;
-  console.log("===========wagerMessageLink============", wagerMessageLink);
+  const wagerMessageLink = `https://t.me/${config.groupUserName}/${wager.bettingMessageId}`;
 
   await bot.sendMessage(
     chatId,
@@ -1638,7 +1614,7 @@ const sendClosedWagerDetails = async (
 
       await bot.sendMessage(
         chatId,
-        `🟢 You are currently betting on ${totalWagers} open wager(s).\n\n` +
+        `🟢 You have betted on ${totalWagers} wagers that are now closed\n\n` +
           `Wager ID: <b>${wager.wagerId}</b>\n\n` +
           `Wager: <i>${wager.wagerDescription}</i>\n\n` +
           `🅰️ Option A Pot: $${wager.totalPotA}\n` +
@@ -1682,7 +1658,7 @@ const sendClosedWagerDetails = async (
 
       await bot.sendMessage(
         chatId,
-        `🟢 You are currently betting on ${totalWagers} open wager(s).\n\n` +
+        `🟢 You have betted on ${totalWagers} wagers that are now closed.\n\n` +
           `Wager ID: <b>${wager.wagerId}</b>\n\n` +
           `Wager: <i>${wager.wagerDescription}</i>\n\n` +
           `🅰️ Option A Pot: $${wager.totalPotA}\n` +
@@ -1710,6 +1686,40 @@ const sendClosedWagerDetails = async (
       );
     }
   }
+  // else {
+  //   await bot.sendMessage(
+  //     chatId,
+  //     `🟢 You are currently betting on ${totalWagers} open wager(s).\n\n` +
+  //       `Wager ID: <b>${wager.wagerId}</b>\n\n` +
+  //       `Wager: <i>${wager.wagerDescription}</i>\n\n` +
+  //       `🅰️ Option A Pot: $${wager.totalPotA}\n` +
+  //       `🅱️ Option B Pot: $${wager.totalPotB}\n\n` +
+  //       `Pick an option below:` +
+  //       `🏆 Winners\n\n` +
+  //       `🥴Losers\n\n` +
+  //       `🔴 <b>Wager closed</b>\n\n` +
+  //       `The wager "${wager.wagerDescription}" has now closed with enough votes.\n\n` +
+  //       `😭 <b>Verdict</b>: An outcome was not agreed upon by voters.\n` +
+  //       `💩 <b>Outcome</b>: The wager is cancelled and all bets are refunded to players.`,
+  //     {
+  //       parse_mode: "HTML",
+  //       reply_markup: {
+  //         inline_keyboard: [
+  //           [
+  //             {
+  //               text: "⬅️ Previous Wager",
+  //               callback_data: `closeprev_${currentIndex}`,
+  //             },
+  //             {
+  //               text: "➡️ Next Wager",
+  //               callback_data: `closenext_${currentIndex}`,
+  //             },
+  //           ],
+  //         ],
+  //       },
+  //     }
+  //   );
+  // }
 };
 
 export default bot;

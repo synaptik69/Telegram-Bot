@@ -12,7 +12,6 @@ export const placeBet = async (
 ): Promise<any> => {
   try {
     const wager = await Wager.findOne({ where: { wagerId } });
-    console.log("-------------------*wagerId----------", wagerId);
     if (!wager) {
       return { success: false, message: "Wager not found." };
     }
@@ -54,7 +53,6 @@ export const placeBet = async (
 // Function to calculate odds
 export const calculateOdds = async (wagerId: number): Promise<any> => {
   const wager = await Wager.findOne({ where: { wagerId } });
-  console.log("=================calculateodds", wagerId);
 
   if (!wager) {
     return { success: false, message: "Wager not found." };
@@ -88,10 +86,9 @@ export const checkUserBet = async (
 
   // Query the database for the bet
   const bet = await Bet.findOne({
-    where: { wagerId, userId },
+    where: { userId, wagerId },
   });
 
-  console.log("1111111bet", bet);
   return !!bet;
 };
 
